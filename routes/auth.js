@@ -46,10 +46,20 @@ router.post(
   },
 );
 
-router.post("/logout", (req, res, next) => {
+router.get("/logout", (req, res, next) => {
   req.logout((err) => {
-    if (err) return next(err);
-    res.redirect("/");
+    if (err) {
+      return next(err);
+    }
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error destroying session:", err);
+      }
+     
+      res.clearCookie("connect.sid");
+     
+      res.redirect("/");
+    });
   });
 });
 
