@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// The Session model for persistent Express authentication
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String   @db.Text
+  expiresAt DateTime
+}
+
+// The User model, tracking their 16MB quota
+model User {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String
+  storageUsed Int      @default(0) // Track bytes used out of 16,777,216 (16 MB)
+  folders     Folder[]
+  files       File[]
+}
+
+// The self-referencing Folder model
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  
+  // A folder belongs to a user
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Self-referencing: A folder can have one parent, and multiple children
+  parentId  String?
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderToFolder")
+  
+  // A folder can contain many files
+  files     File[]
+  
+  createdAt DateTime @default(now())
+
+  // Prevents users from creating two folders with the exact same name in the same directory
+  @@unique([name, parentId, userId]) 
+}
+
+// The File model
+model File {
+  id        String   @id @default(uuid())
+  name      String
+  size      Int      // Size in bytes to add to User.storageUsed
+  url       String   // The path where the file is actually stored
+  
+  // A file belongs to a user
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // A file can optionally belong to a specific folder (if null, it is in the root)
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  // Prevent duplicate file names in the same directory
+  @@unique([name, folderId, userId]) 
+}

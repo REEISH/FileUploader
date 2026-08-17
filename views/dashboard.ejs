@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Dashboard</title>
+    <link rel="stylesheet" href="/styles/styles.css">
+</head>
+<body>
+    <header class="dashboard-header">
+        <div class="user-info">
+            <h1>Welcome, <%= user.username %>!</h1>
+            <p><strong>Storage Used:</strong> <%= (user.storageUsed / (1024 * 1024)).toFixed(2) %> MB / 16 MB</p>
+        </div>
+        <form action="/auth/logout" method="POST" class="logout-form">
+            <button type="submit" class="btn-logout">Logout</button>
+        </form>
+    </header>
+
+    <main class="dashboard-main">
+        <section class="actions-panel">
+            <div class="action-card">
+                <h3>Create New Folder</h3>
+                <form action="/folders/create" method="POST">
+                    <input type="text" name="name" placeholder="Folder Name" required>
+                   <input type="hidden" name="parentId" value="<%= typeof currentFolder !== 'undefined' ? currentFolder.id : '' %>">
+                    <button type="submit">Create Folder</button>
+                </form>
+            </div>
+
+            <div class="action-card">
+                <h3>Upload File</h3>
+                <form action="/files/upload" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="file" required>
+                    <input type="hidden" name="folderId" value="<%= typeof currentFolder !== 'undefined' ? currentFolder.id : '' %>">
+                    <button type="submit">Upload File</button>
+                </form>
+            </div>
+        </section>
+
+        <hr>
+        <section class="content-panel">
+            <% if (typeof currentFolder !== 'undefined' && currentFolder) { %>
+                <div class="folder-navigation" style="margin-bottom: 1.5rem;">
+                    <a href="/dashboard<%= currentFolder.parentId ? '?folder=' + currentFolder.parentId : '' %>" class="btn-back">
+                        🔙
+                    </a>
+                    <h3 style="display:inline-block; margin-left:1rem;">📂 <%= currentFolder.name %></h3>
+                </div>
+            <% } else { %>
+                <h3 style="margin-bottom: 1.5rem;">🏠 Root Directory</h3>
+            <% } %>
+            <div class="folders-list">
+                <h2>Your Folders</h2>
+                <% if (folders && folders.length > 0) { %>
+                    <ul class="item-list">
+                        <% folders.forEach(folder => { %>
+                            <li>
+                                📁 <a href="/dashboard?folder=<%= folder.id %>" style="text-decoration: none; color: inherit;">
+                                    <strong><%= folder.name %></strong>
+                                </a>
+                            </li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="empty-state">No folders created yet.</p>
+                <% } %>
+            </div>
+
+          <div class="files-list">
+                <h2>Your Files</h2>
+                <% if (files && files.length > 0) { %>
+                    <ul class="item-list">
+                        <% files.forEach(file => { %>
+                            <li>
+                                📄 <a href="<%= file.url %>" target="_blank" title="View in browser"><%= file.name %></a> 
+                                <span class="file-size">(<%= (file.size / 1024).toFixed(2) %> KB)</span>
+                                <a href="/files/<%= file.id %>/download" class="btn-download" style="margin-left: 15px; font-size: 0.85rem;">
+                                    ⬇️ Download
+                                </a>
+                            </li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="empty-state">No files uploaded yet.</p>
+                <% } %>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
